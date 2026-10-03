@@ -40,7 +40,7 @@ function Crud({ path, fields, show, hint }) {
       {fields.map((x) => x.t === 'check' ? <label key={x.k}><input type="checkbox" checked={!!f[x.k]} onChange={(e) => setF({ ...f, [x.k]: e.target.checked })} /> {x.l}</label>
         : x.t === 'select' ? <select key={x.k} value={f[x.k]} onChange={(e) => setF({ ...f, [x.k]: e.target.value })} required><option value="">{x.l}</option>{x.o.map((o) => <option key={o}>{o}</option>)}</select>
         : x.t === 'img' ? <div key={x.k}><label>{x.l} <input type="file" accept="image/*" onChange={(e) => upload(e, x.k)} /></label>{f[x.k] && <img className="thumb" src={f[x.k]} alt="" />}</div>
-        : <input key={x.k} type={x.t === 'number' ? 'number' : x.t === 'date' ? 'date' : 'text'} step="any" placeholder={x.l} title={x.l} value={f[x.k]} onChange={(e) => setF({ ...f, [x.k]: e.target.value })} required={x.r} />)}
+        : <input key={x.k} type={x.t === 'number' ? 'number' : x.t === 'date' ? 'date' : 'text'} step="any" placeholder={x.l} title={x.l} aria-label={x.l} value={f[x.k]} onChange={(e) => setF({ ...f, [x.k]: e.target.value })} required={x.r} />)}
       {m && <p className="warn">{m}</p>}<div className="row"><button className="btn">{id ? 'Save changes' : 'Add'}</button>{id && <button type="button" className="ghost" onClick={() => { setId(null); setF(blank); }}>Cancel</button>}</div></form>
     {rows.map((r) => <div className="card row" key={r._id}><span>{show(r)}</span><span><button className="ghost" onClick={() => { setId(r._id); setF(toForm(r)); }}>Edit</button>
       <button className="ghost" onClick={async () => { if (confirm('Delete this?')) { await api.delete(`${path}/${r._id}`); load(); } }}>Delete</button></span></div>)}</div>);
@@ -51,24 +51,29 @@ function Reviews() {
     <button className="ghost" onClick={async () => { await api.put(`/admin/reviews/${r._id}`, { approved: !r.approved }); load(); }}>{r.approved ? 'Hide' : 'Approve'}</button>
     <button className="ghost" onClick={async () => { await api.delete(`/admin/reviews/${r._id}`); load(); }}>Delete</button></div>)}</div>;
 }
-const SF = [['businessName', 'Business name'], ['whatsapp', 'WhatsApp number (e.g. 919876543210)'], ['upiId', 'UPI ID'], ['cutoffHour', 'Order cutoff hour (0–23, IST)'], ['maxOrdersPerDay', 'Max orders per day'], ['deliveryWindow', 'Delivery time text (fixed 8:30 AM – 10:00 AM)']];
+const SF = [['businessName', 'Business name'], ['whatsapp', 'WhatsApp number for orders (country code + number, e.g. 919876543210)'], ['upiId', 'UPI ID'],
+  ['cutoffHour', 'Order cutoff hour (0–23, IST)'], ['maxOrdersPerDay', 'Max orders per day'], ['deliveryWindow', 'Delivery time window (e.g. 8:30 AM – 10:00 AM)'],
+  ['deliveryArea', 'Delivery area (e.g. Vailankanni)'], ['phone', 'Phone (shown on Contact page)'], ['email', 'Email'], ['address', 'Kitchen address'],
+  ['hours', 'Opening hours (e.g. 8:00 AM – 8:00 PM)'], ['mapsUrl', 'Google Maps link'], ['instagramUrl', 'Instagram link'], ['facebookUrl', 'Facebook link']];
 function Settings() {
   const [f, setF] = useState(null), [m, setM] = useState('');
   useEffect(() => { api.get('/admin/settings').then((r) => setF(r.data)); }, []);
   if (!f) return <p>Loading…</p>;
   const save = async (e) => { e.preventDefault(); try { setF((await api.put('/admin/settings', f)).data); setM('Saved'); } catch (x) { setM(err(x)); } };
-  return <form className="form" onSubmit={save}>{SF.map(([k, l]) => <label key={k}>{l}<input value={f[k] ?? ''} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>)}<button className="btn">Save settings</button>{m && <p>{m}</p>}</form>;
+  return <form className="form" onSubmit={save}>{SF.map(([k, l]) => <label key={k}>{l}<input value={f[k] ?? ''} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>)}<button className="btn">Save settings</button>{m && <p role="status">{m}</p>}</form>;
 }
 const TABS = {
   Dashboard: () => <Dashboard />, Orders: () => <Orders />,
-  Menu: () => <Crud path="/admin/menu" hint="Weekdays: 0=Sun … 6=Sat, comma separated. Empty = every day." show={(r) => `${r.name} · ₹${r.price}${r.available ? '' : ' (hidden)'}`}
+  Menu: () => <Crud path="/admin/menu" hint="Weekdays: 0=Sun … 6=Sat, comma separated. Empty = every day." show={(r) => `${r.name} · ₹${r.price}${r.special ? ' · special' : ''}${r.available ? '' : ' (hidden)'}`}
     fields={[{ k: 'name', l: 'Name', r: 1 }, { k: 'description', l: 'Description' }, { k: 'price', l: 'Price ₹ (delivery included)', t: 'number', r: 1 }, { k: 'image', l: 'Image', t: 'img' },
       { k: 'nutrition', l: 'Nutrition (e.g. 210 kcal · 7g protein)' }, { k: 'tags', l: 'Diet tags, comma separated', t: 'csv' }, { k: 'weekdays', l: 'Weekdays (0-6)', t: 'nums' },
-      { k: 'veg', l: 'Vegetarian', t: 'check', d: true }, { k: 'available', l: 'Available', t: 'check', d: true }]} />,
-  'Delivery slots': () => <Settings />,
+      { k: 'veg', l: 'Vegetarian', t: 'check', d: true }, { k: 'available', l: 'Available', t: 'check', d: true },
+      { k: 'special', l: "Today's special (highlighted on the home page)", t: 'check' }]} />,
   Holidays: () => <Crud path="/admin/holidays" show={(r) => `${r.date} ${r.reason || ''}`} fields={[{ k: 'date', l: 'Date', t: 'date', r: 1 }, { k: 'reason', l: 'Reason' }]} />,
-  Coupons: () => <Crud path="/admin/coupons" show={(r) => `${r.code} · ${r.type === 'percent' ? r.value + '%' : '₹' + r.value} off${r.expiry ? ' · till ' + String(r.expiry).slice(0, 10) : ''}${r.active ? '' : ' (off)'}`}
-    fields={[{ k: 'code', l: 'Code', r: 1 }, { k: 'type', l: 'Type', t: 'select', o: ['percent', 'flat'] }, { k: 'value', l: 'Value', t: 'number', r: 1 }, { k: 'expiry', l: 'Expiry date', t: 'date' }, { k: 'active', l: 'Active', t: 'check', d: true }]} />,
+  Coupons: () => <Crud path="/admin/coupons" hint="Max uses: total number of orders that can use the code (0 or empty = unlimited)."
+    show={(r) => `${r.code} · ${r.type === 'percent' ? r.value + '%' : '₹' + r.value} off${r.minOrder ? ` · min ₹${r.minOrder}` : ''} · used ${r.usedCount || 0}${r.maxUses ? '/' + r.maxUses : ''}${r.expiry ? ' · till ' + String(r.expiry).slice(0, 10) : ''}${r.active ? '' : ' (off)'}`}
+    fields={[{ k: 'code', l: 'Code', r: 1 }, { k: 'type', l: 'Type', t: 'select', o: ['percent', 'flat'] }, { k: 'value', l: 'Value (% or ₹)', t: 'number', r: 1 },
+      { k: 'minOrder', l: 'Minimum order ₹', t: 'number' }, { k: 'maxUses', l: 'Max uses', t: 'number' }, { k: 'expiry', l: 'Expiry date', t: 'date' }, { k: 'active', l: 'Active', t: 'check', d: true }]} />,
   Reviews: () => <Reviews />, Settings: () => <Settings />,
 };
 export default function Admin() {
@@ -76,5 +81,5 @@ export default function Admin() {
   return (<div className="admin"><aside><b>Admin</b><small>{user.email}</small>
     {Object.keys(TABS).map((t) => <button key={t} className={t === tab ? 'on' : ''} onClick={() => setTab(t)}>{t}</button>)}
     <Link to="/">View site</Link><button onClick={logout}>Sign out</button></aside>
-    <section key={tab}><h1>{tab}</h1>{tab === 'Delivery slots' && <p>Delivery is fixed at 8:30–10:00 AM, next day only. Cutoff and daily capacity are set here.</p>}{TABS[tab]()}</section></div>);
+    <section key={tab}><h1>{tab}</h1>{TABS[tab]()}</section></div>);
 }

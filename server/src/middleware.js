@@ -4,7 +4,7 @@ export const verifyToken = async (q, s, n) => {
   try {
     const p = jwt.verify(q.cookies.access, process.env.JWT_SECRET);
     const u = await User.findById(p.id);
-    if (!u) throw new Error();
+    if (!u || p.v !== u.tokenVersion) throw new Error();
     q.user = u; n();
   } catch { s.status(401).json({ error: 'Unauthorized' }); }
 };

@@ -13,7 +13,6 @@ export function AuthProvider({ children }) {
     })();
   }, []);
   const login = async (email, password) => { const u = (await api.post('/auth/login', { email, password })).data.user; setUser(u); return u; };
-  const register = async (name, email, password) => { const u = (await api.post('/auth/register', { name, email, password })).data.user; setUser(u); return u; };
   const logout = async () => { await api.post('/auth/logout').catch(() => {}); setUser(null); };
-  return <C.Provider value={{ user, loading, login, register, logout }}>{children}</C.Provider>;
+  return <C.Provider value={{ user, loading, login, logout }}>{children}</C.Provider>;
 }

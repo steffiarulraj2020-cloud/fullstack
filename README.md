@@ -7,7 +7,15 @@ All times use IST. Admin sets cutoff hour and max orders/day in Admin → Settin
 1. MongoDB Atlas (or local Mongo) URI ready. Cloudinary account for image upload.
 2. `cd server && cp .env.example .env` (fill values) `&& npm i && npm run seed && npm run dev`
 3. `cd client && cp .env.example .env && npm i && npm run dev` → http://localhost:5173
-4. Sign in at `/login` with ADMIN_EMAIL / ADMIN_PASSWORD, then open /admin. Set the real WhatsApp number in Settings first.
+4. Sign in at `/login` with ADMIN_EMAIL / ADMIN_PASSWORD, then open /admin. Set the real WhatsApp number in Settings first: online ordering stays disabled until it is set.
+   Quote values containing `#` in `.env` (e.g. `ADMIN_PASSWORD="ChangeMe#12345"`), otherwise dotenv cuts the value at `#`.
+
+## Business rules
+- Accounts: there is no public sign-up; only the admin created by `npm run seed` can sign in. Signing out revokes all of that user's sessions.
+- Dishes with weekdays set can only be ordered for those days (checked on the server).
+- Coupons support a minimum order and a maximum number of uses (0/empty = unlimited). Percent coupons are capped at 100.
+- Daily capacity (max orders/day) is enforced safely even when several customers order at the same moment.
+- Contact details shown on the site (phone, email, address, hours, maps, social links, delivery area) come from Admin → Settings.
 
 ## Deploy (free tier)
 **1. Atlas:** create free M0 cluster → Database Access: add user → Network Access: allow `0.0.0.0/0` (Render free has no static IP) → Connect → copy the URI as `MONGO_URI` (add `/gnanams-kitchen` before `?`).
